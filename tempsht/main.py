@@ -1,17 +1,17 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
-import threading
 from utils import local_ip
 from logger import Logger
 from sender import Sender
 from receiver import Receiver
-
+import os
+import threading
 TCP_PORT = 5000
 
 class App:
     def __init__(self, root):
         self.root = root
-        root.title("P2P File Transfer (Manual IP)")
+        root.title("P2P File Transfer (LAN)")
         root.geometry("800x600")
 
         top = tk.Frame(root)
@@ -23,7 +23,7 @@ class App:
         mid = tk.Frame(root)
         mid.pack(fill=tk.BOTH, expand=True, padx=8, pady=6)
 
-        # Send Panel
+        # Send panel
         send_frame = tk.LabelFrame(mid, text="Send", padx=8, pady=8)
         send_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=6, pady=6)
         self.send_file_label = tk.Label(send_frame, text="No file selected")
@@ -34,10 +34,9 @@ class App:
         self.send_status = tk.Label(send_frame, text="Idle", fg="green")
         self.send_status.pack(pady=(6,0))
 
-        # Receive Panel
+        # Receive panel
         recv_frame = tk.LabelFrame(mid, text="Receive", padx=8, pady=8)
         recv_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=6, pady=6)
-
         ip_row = tk.Frame(recv_frame)
         ip_row.pack(fill=tk.X)
         tk.Label(ip_row, text="Sender IP:").pack(side=tk.LEFT)
@@ -47,12 +46,10 @@ class App:
         self.port_entry = tk.Entry(ip_row, width=6)
         self.port_entry.insert(0, str(TCP_PORT))
         self.port_entry.pack(side=tk.LEFT)
-
         tk.Button(recv_frame, text="Get File Info", command=self.get_file_info).pack(fill=tk.X, pady=(6,0))
         self.incoming_info_label = tk.Label(recv_frame, text="No info")
         self.incoming_info_label.pack(fill=tk.X, pady=(6,0))
         tk.Button(recv_frame, text="Proceed (Download)", command=self.proceed_receive).pack(fill=tk.X, pady=(6,0))
-
         self.recv_status = tk.Label(recv_frame, text="Idle", fg="green")
         self.recv_status.pack(pady=(6,0))
         self.progress = ttk.Progressbar(recv_frame, length=200)
@@ -84,7 +81,7 @@ class App:
         path = filedialog.askopenfilename()
         if not path: return
         self.selected_file_path = path
-        self.send_file_label.config(text=path.split("/")[-1])
+        self.send_file_label.config(text=os.path.basename(path))
         self.sender.set_file(path)
 
     def proceed_send(self):
@@ -102,15 +99,15 @@ class App:
         try:
             port = int(self.port_entry.get().strip())
         except: return
+        threading.Thread(target=lambda: self._get_header_worker(ip, port), daemon=True).start()
 
-        def worker():
-            res = self.receiver.get_header(ip, port)
-            if res:
-                filename, filesize = res
-                self.incoming_info_label.config(text=f"Sender file: {filename} ({filesize} bytes)")
-            else:
-                self.incoming_info_label.config(text="Failed to get info.")
-        threading.Thread(target=worker, daemon=True).start()
+    def _get_header_worker(self, ip, port):
+        res = self.receiver.get_header(ip, port)
+        if res:
+            filename, filesize = res
+            self.incoming_info_label.config(text=f"Sender file: {filename} ({filesize} bytes)")
+        else:
+            self.incoming_info_label.config(text="Failed to get info.")
 
     def proceed_receive(self):
         ip = self.ip_entry.get().strip()
@@ -118,17 +115,16 @@ class App:
         try:
             port = int(self.port_entry.get().strip())
         except: return
+        threading.Thread(target=lambda: self._download_worker(ip, port), daemon=True).start()
 
+    def _download_worker(self, ip, port):
         def ask_save(default_name):
             return filedialog.asksaveasfilename(initialfile=default_name)
-
-        def worker():
-            success = self.receiver.download(ip, port, ask_save, self.history_table)
-            if success:
-                messagebox.showinfo("Download", "File downloaded successfully.")
-            else:
-                messagebox.showerror("Download", "File download failed.")
-        threading.Thread(target=worker, daemon=True).start()
+        success = self.receiver.download(ip, port, ask_save, self.history_table)
+        if success:
+            messagebox.showinfo("Download", "File downloaded successfully.")
+        else:
+            messagebox.showerror("Download", "File download failed.")
 
 if __name__ == "__main__":
     root = tk.Tk()

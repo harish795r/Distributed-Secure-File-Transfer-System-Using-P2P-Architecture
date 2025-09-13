@@ -24,8 +24,7 @@ class Receiver:
                 header = b""
                 while not header.endswith(b"\n"):
                     part = s.recv(1)
-                    if not part:
-                        break
+                    if not part: break
                     header += part
                 filename, filesize = header.decode().strip().split("|")
                 filesize = int(filesize)
@@ -42,15 +41,16 @@ class Receiver:
             return False
         filename, filesize = self.cached_header
         self.logger.log(f"Starting download from {ip}:{port} -> {filename} ({filesize} bytes)")
+
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.settimeout(10.0)
                 s.connect((ip, port))
+                # read header again
                 header = b""
                 while not header.endswith(b"\n"):
                     part = s.recv(1)
-                    if not part:
-                        raise RuntimeError("Connection closed")
+                    if not part: raise RuntimeError("Connection closed")
                     header += part
                 save_path = save_path_callback(f"received_{filename}")
                 if not save_path:
@@ -65,11 +65,9 @@ class Receiver:
                 with open(save_path, "wb") as f:
                     while received < filesize:
                         chunk = s.recv(min(CHUNK_SIZE, filesize - received))
-                        if not chunk:
-                            break
+                        if not chunk: break
                         f.write(chunk)
                         received += len(chunk)
-
                         self.progress["value"] = received
                         elapsed = time.time() - start_time
                         speed = (received / 1024) / elapsed if elapsed > 0 else 0

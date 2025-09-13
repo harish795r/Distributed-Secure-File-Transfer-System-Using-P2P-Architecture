@@ -1,9 +1,8 @@
-import os
 import socket
 import threading
+import os
 
 CHUNK_SIZE = 4096
-TCP_PORT = 5000
 
 class Sender:
     def __init__(self, logger, status_label):
@@ -19,7 +18,7 @@ class Sender:
         self.filesize = os.path.getsize(path)
         self.logger.log(f"File set for sending: {path} ({self.filesize} bytes)")
 
-    def start(self, bind_ip="0.0.0.0", tcp_port=TCP_PORT):
+    def start(self, bind_ip="0.0.0.0", tcp_port=5000):
         if not self.filepath:
             self.logger.log("No file selected to send.")
             return False
@@ -28,7 +27,7 @@ class Sender:
                                            args=(bind_ip, tcp_port),
                                            daemon=True)
         self.tcp_thread.start()
-        self.logger.log("Sender TCP server started.")
+        self.logger.log(f"Sender TCP server started at {bind_ip}:{tcp_port}")
         self.set_status("Sending", "blue")
         return True
 
@@ -51,7 +50,6 @@ class Sender:
             serv.close()
             return
 
-        self.logger.log(f"TCP server listening on {bind_ip}:{tcp_port}")
         serv.settimeout(1.0)
         try:
             while not self.stop_event.is_set():
