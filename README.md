@@ -1,4 +1,4 @@
-# Decentralized Secure File Transfer System (P2P)
+# Distributed Secure File Transfer System (P2P)
 
 [![repo stars](https://img.shields.io/github/stars/harish795r/Decentralized-Secure-File-Transfer-System-Using-P2P-Architecture?style=social)](https://github.com/harish795r/Decentralized-Secure-File-Transfer-System-Using-P2P-Architecture/stargazers) [![python](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/) [![license](https://img.shields.io/badge/license-See%20repo-lightgrey)](https://github.com/harish795r/Decentralized-Secure-File-Transfer-System-Using-P2P-Architecture)
 
